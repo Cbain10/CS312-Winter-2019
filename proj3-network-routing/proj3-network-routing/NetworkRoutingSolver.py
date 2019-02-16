@@ -13,20 +13,27 @@ class NetworkRoutingSolver:
         assert( type(network) == CS312Graph )
         self.network = network
 
+    """
+    worst case we go through all V nodes to get there.  For each node worst case we check each edge attatched.
+    Thus, this worst case O(V + E) time and O(V + E) space to hold all those nodes and edges.
+    """
     def getShortestPath( self, destIndex ):
         self.dest = destIndex
-
+        # init O(1) time and space
         path_edges = []
         total_length = 0
         nodes = self.network.nodes
         prev = self.node_info["prev"]
         cost = self.node_info["cost"]
         current_node_index = destIndex
+        # worst case we go through all V nodes to get there.  For each node worst case we check each edge attatched.
+        # thus this worst case O(V + E) time and O(V + E) space to hold all those nodes and edges.
         while current_node_index != self.source:
             prev_node = prev[current_node_index]
             if prev_node is None:
                 print("There is no previous node.  Quitting")
                 return {'cost': float("inf"), 'path': []}
+            # check all the edges worst case
             edge_length = self.get_node_length(prev_node, current_node_index)
             if edge_length is None:
                 print("There is no edge.  Quitting")
@@ -37,6 +44,9 @@ class NetworkRoutingSolver:
         assert (int(total_length) == int(cost[destIndex]))
         return {'cost': cost[destIndex], 'path': path_edges}
 
+    """
+    This function is the same as dijkstras.  Since it is such a long explanation, see dijkstras for more info
+    """
     def computeShortestPaths( self, srcIndex, use_heap=False ):
         self.source = srcIndex
         t1 = time.time()
@@ -44,39 +54,54 @@ class NetworkRoutingSolver:
         t2 = time.time()
         return (t2-t1)
 
+    """
+    This checks at most all the edges for a node which is O(1) = 3 worst case. It is O(1) space since it 
+    doesn't store anything
+    """
     def get_node_length(self, current_node_index, prev_node):
         for edge in self.network.nodes[current_node_index].neighbors:
             if edge.dest.node_id == prev_node:
                 return edge.length
 
+    """
+    Depending on the implementation (list or heap) we see a time complexity of O(V^2 + E) or O((V+E)logV) 
+    time respectively.
+    Depending on the implementation (list or heap) we see a space complexity of O(V) space for both.
+    
+    See details in function or in paper report.
+    """
     def dijkstras(self, graph, start_node, use_heap):
         try:
-            # initialize
+            # initialize -> O(1)
             dist = {}
             prev = {}
             length_dict = {}
+            # for loop is O(V) time and space
             for index, node in enumerate(graph):
                 dist[node.node_id] = float('inf')
                 prev[node.node_id] = None
 
-            # run dijkstras
             dist[start_node] = 0
+            # set up data structures
             if use_heap:
-                priority = MinHeap(dist)
-                if priority.index_map[start_node] != 0:
-                    print("Heaping is not working")
+                priority = MinHeap(dist)  # O(VlogV) time to insert V nodes at log(V) cost.
             else:
-                priority = Queue(start_node, dist.keys())
+                priority = Queue(start_node, dist.keys())  # O(V) time to insert V nodes at O(1) cost.
 
             iteration = 0
-            # Checking size is O(n) worst case for list implementation and O(1) for heap
+            # Checking size is O(1) worst case for both implementations
             while priority.size() != 0:
-                # delete min is
+                # delete min is O(logV) for heap and O(V) for list.  Space is O(1) for both
+                # thus sine this is called V times it is O(VlogV) for heap and O(V^2) for list
                 u = priority.delete_min()
+                # For every edge: all e in E
                 for edge in graph[u].neighbors:
                     if edge.length + dist[u] < dist[edge.dest.node_id]:
                         dist[edge.dest.node_id] = dist[u] + edge.length
                         prev[edge.dest.node_id] = u
+                        # decrease key is called E times worst case
+                        # for heap it is O(logV) and for list O(1).
+                        # thus it is O(ElogV) for the heap and O(E) for the list
                         priority.decrease_key(edge.dest.node_id, dist[edge.dest.node_id])
                 iteration += 1
             return {"cost": dist, "prev": prev}
@@ -85,13 +110,12 @@ class NetworkRoutingSolver:
             print(e)
             traceback.print_tb(e.__traceback__)
 
-# Heap needs to have access to array - maybe have two arrays to see where it is in the queue
 
 class Queue:
 
     """
-    creating the full list is n times of inserting, which is O(n)
-    Space is O(n) since it stores all the nodes
+    creating the full list is n times of inserting, which is O(V)
+    Space is O(V) since it stores all the nodes
     """
     def __init__(self, start_node, list_of_all_nodes):
         # self.queue = [float("inf")] * len(list_of_all_nodes)
@@ -102,38 +126,51 @@ class Queue:
 
         # for this lab set the start_node to zero distance
         self.queue[start_node] = 0
+        self.length = len(self.queue)
 
     """
-    O(n) time and space worst case to go through each x in the queue and adding it to another list
+    O(1) time and space
     Note: this is never used in this data structure -> only outside
     """
     def size(self):
-        return len([x for x in self.queue if x is not None])
+        return self.length
 
+    """
+    It is O(V) time since it has to find the min value and return it.
+    It is O(1) Space since it doesn't store anything
+    """
     def delete_min(self):
         # this is O(n) since it takes n to find the min and n to find the index
         min_index = self.queue.index(min(x for x in self.queue if x is not None))
-        min_node_num = self.queue[min_index]
         self.queue[min_index] = None
+        self.length -= 1
         return int(min_index)
 
+    """
+    It is O(1) time since it just changes the value of an index
+    It is O(1) Space since it doesn't store anything
+    """
     def decrease_key(self, key, value):
         # changing the value is O(1) for lookups
         self.queue[key] = value
         return
 
+    """
+    It is O(1) time since it just appends to the end of a list and changes it's value
+    It is O(1) Space since it doesn't store anything other than the one value
+    """
     def insert(self, key, value):
         self.queue.append(key)
         self.queue[key] = value
+        self.length += 1
         return
 
 class MinHeap:
 
     """
-    Time is the same as n times the number of inserts which is O(logn) so this function is O(nlogn) to create
-    Space is O(n) since it adds n items to a list.
+    Time is the same as V times the number of inserts which is O(logV) so this function is O(VlogV) to create
+    Space is O(V) since it adds n items to a list.
     """
-
     def __init__(self, nodes):
         self.min_index = 0
         self.heap = []
@@ -146,12 +183,11 @@ class MinHeap:
     """
     O(1) time and space - helper function
     """
-
     def size(self):
         return len(self.heap)
 
     """
-    Time is O(1) for inserts into lists, but O(logn) for bubble up so this is O(logn)
+    Time is O(1) for inserts into lists, but O(logV) for bubble up so this is O(logV)
     Space is O(1) since all of these are O(1) space operations
     """
     def insert(self, node, value):
@@ -161,7 +197,7 @@ class MinHeap:
         self.bubble_up(self.size() - 1)
 
     """
-    Bubble up is at worst O(logn) time to go all the way up.  The rest are constant in this function
+    Bubble up is at worst O(logV) time to go all the way up.  The rest are constant in this function
     Space is constant since it just keeps a constant number of values
     """
 
@@ -178,28 +214,9 @@ class MinHeap:
         return
 
     """
-    debug function O(n) but not used in main code now
-    """
-
-    def print(self):
-        repeat_num = 1
-        repeat_again = 1
-        print("Start Heap")
-        for index in range(len(self.heap)):
-            if index == repeat_num:
-                print("\n", end="")
-                print("Node {}: value {} ,".format(self.heap[index], self.values[index]), end="")
-                repeat_again *= 2
-                repeat_num += repeat_again
-            else:
-                print("Node {}: value {} ,".format(self.heap[index], self.values[index]), end="")
-        print("\n End Heap")
-
-    """
-    Time is O(logn) since bubble_up is O(logn) and the rest are constant
+    Time is O(logV) since bubble_up is O(logV) and the rest are constant
     Space is O(1), just look ups
     """
-
     def decrease_key(self, node_id, value):
         # find and decrease node.  O(logn) to find node
         index_of_node = self.index_map[node_id]
@@ -211,10 +228,9 @@ class MinHeap:
         self.bubble_up(index_of_node)
 
     """
-    All of the operations are O(1) to access and delete but sift down is O(logn) so this function is too.
+    All of the operations are O(1) to access and delete but sift down is O(logV) so this function is too.
     Space is O(1) since all memory usages are constant
     """
-
     def delete_min(self):
         min = self.heap[self.min_index]
         # base case - one left
@@ -242,7 +258,6 @@ class MinHeap:
     It is O(1) time since all it does it access and compare which are O(1) operations
     O(1) space since it only stores a few values
     """
-
     def get_min_child_value_and_index(self, node_num):
         left_child = float("inf")
         right_child = float("inf")
@@ -258,22 +273,19 @@ class MinHeap:
     """
     helper function O(1) time and space - one calculation and one look up
     """
-
     def get_parent_values(self, node_number):
         return self.values[(node_number - 1) // 2]
 
     """
     helper function O(1) time and space - one calculation
     """
-
     def get_parent_index(self, node_number):
         return (node_number - 1) // 2
 
     """
-    This function is O(1) worst case TODO: ask
-    Space complexity is O(logn) to sift all the way down
+    This function is O(logv) worst case to sift a node all the way down the logv levels
+    O(1) space since it only stores a constant amount of values.
     """
-
     def sift_down(self, node_num):
         while node_num < (len(self.heap) // 2):
             min_child, child_index = self.get_min_child_value_and_index(node_num)
@@ -285,26 +297,9 @@ class MinHeap:
                 return
 
     """
-    This function calls sift down log(n) times which means to create the heap is O(log^2(n))
-    space is O(1) since it is constant in this and in sift down
-    """
-
-    def heapify(self, nodes):
-        # only runs log(n) times for each layer
-        i = len(nodes) // 2
-        self.heap = list(nodes.keys())
-        self.values = list(nodes.values())
-        while i >= 0:
-            self.sift_down(i)
-            i -= 1
-
-    # call insert function TODO: fix
-
-    """
     Swap is O(1) time since all it does it access array
     it is O(1) space since it just swaps them
     """
-
     def swap(self, child_index, parent_index):
         # all of these operations are O(1) just changing numbers
 
