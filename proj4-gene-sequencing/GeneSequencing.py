@@ -20,6 +20,14 @@ MATCH = -3
 INDEL = 5
 SUB = 1
 
+
+class Cell:
+
+	def __init__(self, cost=0, prev=None):
+		self.cost = cost
+		self.prev = prev
+
+
 class GeneSequencing:
 
 	def __init__( self ):
@@ -34,7 +42,7 @@ class GeneSequencing:
 	def align( self, sequences, table, banded, align_length):
 		self.banded = banded
 		self.MaxCharactersToAlign = align_length
-		self.matrix = np.zeros(len(sequences[0]), len(sequences[1]))
+
 		results = []
 		for i in range(len(sequences)):
 			jresults = []
@@ -42,12 +50,17 @@ class GeneSequencing:
 
 				if(j < i):
 					s = {}
+				# elif j > 1 or i > 1:
+				# 	break
 				else:
-					score = self.get_gene_sequences(i, j)
-					alignment1 = 'abc-easy  DEBUG:(seq{}, {} chars,align_len={}{})'.format(i+1,
-						len(sequences[i]), align_length, ',BANDED' if banded else '')
-					alignment2 = 'as-123--  DEBUG:(seq{}, {} chars,align_len={}{})'.format(j+1,
-						len(sequences[j]), align_length, ',BANDED' if banded else '')
+					try:
+						print("On {}, {}".format(i, j))
+						score, alignment1, alignment2 = self.get_gene_sequences(sequences[i], sequences[j],
+																				align_length, banded)
+					except Exception as e:
+						# to debug
+						print(e)
+						quit(1)
 					s = {'align_cost':score, 'seqi_first100':alignment1, 'seqj_first100':alignment2}
 					table.item(i,j).setText('{}'.format(int(score) if score != math.inf else score))
 					table.repaint()	
@@ -55,25 +68,82 @@ class GeneSequencing:
 			results.append(jresults)
 		return results
 
-	def get_gene_sequences(self, i: int, j: int):
-		top = float("inf")
-		diag = float("inf")
-		left = float("inf")
 
-		# Get previous info
-		if j - 1 > 0:
-			top = self.matrix[i][j-1]
-		if i - 1 > 0:
-			left = self.matrix[i-1][j]
-		if i - 1 > 0 and j - 1 > 0:
-			diag = self.matrix[i - 1][j - 1]
+	def get_gene_sequences(self, string1, string2, align_length, banded=False):
+		if string1 == string2:
+			return 0, string1, string2
+		else:
+			string1 = string1[:align_length]
+			string2 = string2[:align_length]
 
-		diag_value = SUB if self.string1[i] != self.string2[j] else MATCH
-		choices = {top + INDEL: "top", left + INDEL: "left", diag + diag_value: "diag"}
-		min_score = min(list(choices.keys()))
-		# return min_score, choices[min_score]
-		return 1 + choices
+		# init the matrices
+		self.matrix = np.full(shape=(len(string1)+ 1, len(string2) + 1), fill_value=float("inf"))
+		self.matrix[0][0] = 0
+		self.prev_matrix = np.empty(shape=(len(string1) +1, len(string2)+1), dtype=str)
 
+
+		for i in range( len(string1)+1):
+			for j in range(len(string2) + 1):
+				if banded and abs(j - i) > 3:
+					continue
+				top = float("inf")
+				diag = float("inf")
+				left = float("inf")
+				new_option_flag = False
+				# Get previous info
+				if i - 1 >= 0:
+					new_option_flag = True
+					top = self.matrix[i - 1][j]
+				if j - 1 >= 0:
+					new_option_flag = True
+					left = self.matrix[i][j - 1]
+				if i - 1 >= 0 and j - 1 >= 0:
+					new_option_flag = True
+					diag = self.matrix[i - 1][j - 1]
+
+				if new_option_flag:
+					# edge cases, literally
+					if not i or not j:
+						diag_value = float('inf')
+					else:
+						diag_value = SUB if string1[i - 1] != string2[j - 1] else MATCH
+					choices = {top + INDEL: "top", left + INDEL: "left", diag + diag_value: "diag"}
+					min_score = min(list(choices.keys()))
+					self.matrix[i][j] = min_score
+					self.prev_matrix[i][j] = choices[min_score]
+
+
+		optimal_value = self.matrix[len(string1),  len(string2)]
+		alignment1, alignment2 = self.get_alignments(string1, string2)
+		return optimal_value, alignment1, alignment2
+
+	def get_alignments(self, string1, string2):
+		i = len(string1)
+		j = len(string2)
+		alignment1 = string1
+		alignment2 = string2
+		new = ""
+		while True:
+			prev = self.prev_matrix[i][j]
+			if prev == "":
+				break
+			if prev == "t":
+				new = "-" + new
+				i = i - 1
+				pass
+			elif prev == "l":
+				new = "-" + new
+				j = j - 1
+				pass
+			elif prev == "d":
+				new = string1[i - 1] + new
+				i = i - 1
+				j = j - 1
+				pass
+			else:
+				print('Incorrect Previous Type. Bug!')
+				raise Exception
+		return alignment1, new
 
 
 

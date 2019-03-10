@@ -49,7 +49,7 @@ class Proj4GUI( QMainWindow ):
 		self.statusBar.showMessage('Processing...')
 		app.processEvents()
 		start = time.time()
-		self.processed_results = self.solver.align( sequences, 
+		self.processed_results = self.solver.align(sequences,
 													self.table,
 													banded=self.banded.isChecked(),
 													align_length=int(self.alignLength.text()))
