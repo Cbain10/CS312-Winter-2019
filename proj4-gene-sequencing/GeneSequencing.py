@@ -95,35 +95,11 @@ class GeneSequencing:
 				# if banded run 7 * M times max, or O(M)
 				if banded and abs(j - i) > (k // 2):
 					continue
-				top = float("inf")
-				diag = float("inf")
-				left = float("inf")
-				new_option_flag = False
 				# Get previous info
-				if not banded:
-					if i - 1 >= 0:
-						new_option_flag = True
-						top = self.matrix[i - 1][j]
-					if j - 1 >= 0:
-						new_option_flag = True
-						left = self.matrix[i][j - 1]
-					if i - 1 >= 0 and j - 1 >= 0:
-						new_option_flag = True
-						diag = self.matrix[i - 1][j - 1]
+				if not banded or banded and i <= shift_threshold:
+					top, left, diag, new_option_flag, shift = self.get_unbanded_costs(i, j)
 				else:
-					if i > shift_threshold:
-						shift = i - shift_threshold
-					else:
-						shift = 0
-					if i - 1 >= 0 and j - shift + 1 < k:
-						new_option_flag = True
-						top = self.matrix[i - 1][j + 1 - shift]
-					if j - shift - 1 >= 0:
-						new_option_flag = True
-						left = self.matrix[i][j - 1 - shift]
-					if i - 1 >= 0:
-						new_option_flag = True
-						diag = self.matrix[i - 1][j - shift]
+					top, left, diag, new_option_flag, shift = self.get_banded_costs(i, i, k, shift_threshold)
 				print(i, j, "After")
 				if new_option_flag:
 					# edge cases, literally
@@ -215,6 +191,44 @@ class GeneSequencing:
 				print('Incorrect Previous Type. Bug!')
 				raise Exception
 		return new1, new2
+
+	def get_unbanded_costs(self, i, j):
+		top = float("inf")
+		diag = float("inf")
+		left = float("inf")
+		new_option_flag = False
+		if i - 1 >= 0:
+			new_option_flag = True
+			top = self.matrix[i - 1][j]
+		if j - 1 >= 0:
+			new_option_flag = True
+			left = self.matrix[i][j - 1]
+		if i - 1 >= 0 and j - 1 >= 0:
+			new_option_flag = True
+			diag = self.matrix[i - 1][j - 1]
+
+		return top, left, diag, new_option_flag, 0
+
+	def get_banded_costs(self, i, j, k, shift_threshold):
+		top = float("inf")
+		diag = float("inf")
+		left = float("inf")
+		new_option_flag = False
+		if i > shift_threshold:
+			shift = i - shift_threshold
+		else:
+			shift = 0
+		if i - 1 >= 0 and j - shift + 1 < k:
+			new_option_flag = True
+			top = self.matrix[i - 1][j + 1 - shift]
+		if j - shift - 1 >= 0:
+			new_option_flag = True
+			left = self.matrix[i][j - 1 - shift]
+		if i - 1 >= 0:
+			new_option_flag = True
+			diag = self.matrix[i - 1][j - shift]
+
+		return top, left, diag, new_option_flag, shift
 
 
 
