@@ -99,8 +99,8 @@ class GeneSequencing:
 				if not banded or banded and i <= shift_threshold:
 					top, left, diag, new_option_flag, shift = self.get_unbanded_costs(i, j)
 				else:
-					top, left, diag, new_option_flag, shift = self.get_banded_costs(i, i, k, shift_threshold)
-				print(i, j, "After")
+					top, left, diag, new_option_flag, shift = self.get_banded_costs(i, j, k, shift_threshold)
+				# print(i, j, "After")
 				if new_option_flag:
 					# edge cases, literally
 					if not i or (not j and not banded):
@@ -121,7 +121,7 @@ class GeneSequencing:
 			optimal_value = self.matrix[len(string1),  len(string2)]
 			alignment1, alignment2 = self.get_alignments(string1, string2)
 		else:
-			optimal_value = self.matrix[len(string1),  shift_threshold + 1]
+			optimal_value = self.matrix[len(string1),  shift_threshold]
 			alignment1, alignment2 = self.get_alignments_banded(string1, string2, k)
 
 		# This step is the max of O(M) and O(N)
