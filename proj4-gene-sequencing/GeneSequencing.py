@@ -80,7 +80,7 @@ class GeneSequencing:
 				string1 = string2
 				string2 = string1
 
-			if banded and abs(len(string1) - len(string2)) > k:
+			if banded and abs(len(string1) - len(string2)) > (k // 2):
 				# it is not possible with the banded algorithm
 				return float("inf"), "", ""
 
@@ -99,12 +99,14 @@ class GeneSequencing:
 		shift_threshold = (k // 2)
 		for i in range( len(string1)+1):
 			# Inner loop runs N times if not-banded
-			for j in range(len(string2) + 1):
+			for j in range((len(string2) + 1)):
 				# if banded run 7 * M times max, or O(M)
-				if banded and abs(j - i) > (k // 2):
+				if banded and i - j > shift_threshold:
 					continue
+				elif banded and j - i > shift_threshold:
+					break
 				# Get previous info
-				if not banded or banded and i <= shift_threshold:
+				if not banded or (banded and i <= shift_threshold):
 					top, left, diag, new_option_flag, shift = self.get_unbanded_costs(i, j)
 				else:
 					top, left, diag, new_option_flag, shift = self.get_banded_costs(i, j, k, shift_threshold)
@@ -129,6 +131,7 @@ class GeneSequencing:
 			optimal_value = self.matrix[len(string1),  len(string2)]
 			alignment1, alignment2 = self.get_alignments(string1, string2)
 		else:
+			optimal_value = float("inf")
 			optimal_row = self.matrix[len(string1)]
 			ret_index = None
 			for index, value in enumerate(reversed(optimal_row)):
