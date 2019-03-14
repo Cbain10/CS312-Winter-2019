@@ -52,7 +52,6 @@ class GeneSequencing:
 					s = {}
 				else:
 					try:
-						print("On {}, {}".format(i, j))
 						score, alignment1, alignment2 = self.get_gene_sequences(sequences[i], sequences[j],
 																				align_length, banded)
 					except Exception as e:
@@ -69,10 +68,21 @@ class GeneSequencing:
 
 	def get_gene_sequences(self, string1, string2, align_length, banded=False, k = 7):
 		if string1 == string2:
+			# they are the same string
 			return 0, string1, string2
 		else:
 			string1 = string1[:align_length]
 			string2 = string2[:align_length]
+
+			# use smallest string
+			if len(string1) > len(string2):
+				temp = string1
+				string1 = string2
+				string2 = string1
+
+			if banded and abs(len(string1) - len(string2)) > k:
+				# it is not possible with the banded algorithm
+				return float("inf"), "", ""
 
 			if not banded:
 				# init the matrices.  This takes O(M*N) twice which is still O(M*N) time and space
@@ -90,8 +100,6 @@ class GeneSequencing:
 		for i in range( len(string1)+1):
 			# Inner loop runs N times if not-banded
 			for j in range(len(string2) + 1):
-				if not banded and i > j:
-					continue
 				# if banded run 7 * M times max, or O(M)
 				if banded and abs(j - i) > (k // 2):
 					continue
@@ -100,7 +108,7 @@ class GeneSequencing:
 					top, left, diag, new_option_flag, shift = self.get_unbanded_costs(i, j)
 				else:
 					top, left, diag, new_option_flag, shift = self.get_banded_costs(i, j, k, shift_threshold)
-				# print(i, j, "After")
+
 				if new_option_flag:
 					# edge cases, literally
 					if not i or (not j and not banded):
@@ -121,8 +129,14 @@ class GeneSequencing:
 			optimal_value = self.matrix[len(string1),  len(string2)]
 			alignment1, alignment2 = self.get_alignments(string1, string2)
 		else:
-			optimal_value = self.matrix[len(string1),  shift_threshold]
-			alignment1, alignment2 = self.get_alignments_banded(string1, string2, k)
+			optimal_row = self.matrix[len(string1)]
+			ret_index = None
+			for index, value in enumerate(reversed(optimal_row)):
+				if value != float("inf"):
+					optimal_value = value
+					ret_index = index
+					break
+			alignment1, alignment2 = self.get_alignments_banded(string1, string2, k, ret_index)
 
 		# This step is the max of O(M) and O(N)
 		return optimal_value, alignment1, alignment2
@@ -134,39 +148,6 @@ class GeneSequencing:
 	def get_alignments(self, string1, string2):
 		i = len(string1)
 		j = len(string2)
-		alignment1 = string1
-		alignment2 = string2
-		new = ""
-		while True:
-			prev = self.prev_matrix[i][j]
-			if prev == "":
-				break
-			if prev == "t":
-				new = "-" + new
-				i = i - 1
-				pass
-			elif prev == "l":
-				new = "-" + new
-				j = j - 1
-				pass
-			elif prev == "d":
-				new = string1[i - 1] + new
-				i = i - 1
-				j = j - 1
-				pass
-			else:
-				print('Incorrect Previous Type. Bug!')
-				raise Exception
-		return alignment1, new
-
-	"""
-		Time complexity: goes backwards to generate the string.  Max of O(N) or O(M).
-		Space complexity: max of O(M) or O(N) to hold a string
-	"""
-	def get_alignments_banded(self, string1, string2, k):
-		i = len(string1)
-		j = (k // 2) + 1
-
 		new1 = ""
 		new2 = ""
 		while True:
@@ -174,22 +155,71 @@ class GeneSequencing:
 			if prev == "":
 				break
 			if prev == "t":
-				new2 = "-" + new2
+				new1 = "-" + new1
 				i = i - 1
-				j = j + 1
 				pass
 			elif prev == "l":
-				new1 = "-" + new1
+				new2 = "-" + new2
 				j = j - 1
 				pass
 			elif prev == "d":
 				new1 = string1[i - 1] + new1
 				new2 = string2[j - 1] + new2
 				i = i - 1
+				j = j - 1
 				pass
 			else:
 				print('Incorrect Previous Type. Bug!')
 				raise Exception
+		return new1, new2
+
+	"""
+		Time complexity: goes backwards to generate the string.  Max of O(N) or O(M).
+		Space complexity: max of O(M) or O(N) to hold a string
+	"""
+	def get_alignments_banded(self, string1, string2, k, ret_index=None):
+		i = len(string1)
+		if ret_index is None:
+			j = (k // 2) + 1
+		else:
+			j = ret_index
+
+		len_i = len(string1)
+		len_j = len(string2)
+
+		new1 = ""
+		new2 = ""
+		while True:
+			if i <= (k // 2):
+				rest_of_align1, rest_of_align2 =  self.get_alignments(string1[:i], string2[:i])
+				return rest_of_align1 + new1, rest_of_align2 + new2
+			prev = self.prev_matrix[i][j]
+			if prev == "":
+				break
+			if prev == "t":
+				new1 = "-" + new1
+				i = i - 1
+				len_i -= 1
+				j += 1
+				pass
+			elif prev == "l":
+				new2 = "-" + new2
+				j = j - 1
+				len_j -= 1
+
+				pass
+			elif prev == "d":
+				new1 = string1[len_i - 1] + new1
+				new2 = string2[len_j - 1] + new2
+				i = i - 1
+				len_i -= 1
+				len_j -= 1
+
+				pass
+			else:
+				print('Incorrect Previous Type. Bug!')
+				raise Exception
+		# should never reach this
 		return new1, new2
 
 	def get_unbanded_costs(self, i, j):
