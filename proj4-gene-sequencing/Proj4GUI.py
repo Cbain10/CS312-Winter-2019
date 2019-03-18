@@ -60,7 +60,7 @@ class Proj4GUI( QMainWindow ):
 		if nm > 0:
 			self.statusBar.showMessage('Done.  Time taken: {} mins and {:3.3f} seconds.'.format(nm,ns))
 		else:
-			self.statusBar.showMessage('Done.  Time taken: {:3.3f} seconds.'.format(ns))		
+			self.statusBar.showMessage('Done.  Time taken: {:3.3f} seconds.'.format(ns))
 		self.processButton.setEnabled(False)
 		self.clearButton.setEnabled(True)
 		self.repaint()

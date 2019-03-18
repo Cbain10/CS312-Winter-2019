@@ -20,14 +20,6 @@ MATCH = -3
 INDEL = 5
 SUB = 1
 
-
-class Cell:
-
-	def __init__(self, cost=0, prev=None):
-		self.cost = cost
-		self.prev = prev
-
-
 class GeneSequencing:
 
 	def __init__( self ):
@@ -58,23 +50,28 @@ class GeneSequencing:
 						# to debug
 						print(e)
 						quit(1)
-					s = {'align_cost':score, 'seqi_first100':alignment1, 'seqj_first100':alignment2}
+					s = {'align_cost':score, 'seqi_first100':alignment1[:100], 'seqj_first100':alignment2[:100]}
 					table.item(i,j).setText('{}'.format(int(score) if score != math.inf else score))
 					table.repaint()	
 				jresults.append(s)
 			results.append(jresults)
 		return results
 
-
+	"""
+	Main function
+	For unbanded: O(N*M) time and space to make and fill the matrix
+	for banded: O(kN) time and space since the matrix is smaller
+	"""
 	def get_gene_sequences(self, string1, string2, align_length, banded=False, k = 7):
 		if string1 == string2:
-			# they are the same string
-			return 0, string1, string2
+			# they are the same string - the whole string is a match
+			return -3 * min(align_length, max(len(string1), len(string2))), string1, string2
 		else:
+			# use the align length O(1) time and O(Max(N, M)) space
 			string1 = string1[:align_length]
 			string2 = string2[:align_length]
 
-			# use smallest string
+			# use smallest string (1) time and space to swap
 			if len(string1) > len(string2):
 				temp = string1
 				string1 = string2
@@ -107,8 +104,10 @@ class GeneSequencing:
 					break
 				# Get previous info
 				if not banded or (banded and i <= shift_threshold):
+					# this function is O(1) time and space
 					top, left, diag, new_option_flag, shift = self.get_unbanded_costs(i, j)
 				else:
+					# this function is O(1) time and space
 					top, left, diag, new_option_flag, shift = self.get_banded_costs(i, j, k, shift_threshold)
 
 				if new_option_flag:
@@ -128,17 +127,24 @@ class GeneSequencing:
 						self.prev_matrix[i][j - shift] = choices[min_score]
 
 		if not banded:
+			# O(1) lookup time and space
 			optimal_value = self.matrix[len(string1),  len(string2)]
+			# this function is the max of O(N) and O(M) time and space to hold and find the string
 			alignment1, alignment2 = self.get_alignments(string1, string2)
 		else:
+			# O(1) lookup time and space
 			optimal_value = float("inf")
 			optimal_row = self.matrix[len(string1)]
 			ret_index = None
+			# this will loop backwords to find the first element that is not infinity
+			# this is because the min element is not the bottom right like it is in the unbanded
+			# it is a max of O(k) time and O(1) space
 			for index, value in enumerate(reversed(optimal_row)):
 				if value != float("inf"):
 					optimal_value = value
 					ret_index = index
 					break
+			# this function is the max of O(N) and O(M) time and space to hold and find the string
 			alignment1, alignment2 = self.get_alignments_banded(string1, string2, k, ret_index)
 
 		# This step is the max of O(M) and O(N)
@@ -177,8 +183,8 @@ class GeneSequencing:
 		return new1, new2
 
 	"""
-		Time complexity: goes backwards to generate the string.  Max of O(N) or O(M).
-		Space complexity: max of O(M) or O(N) to hold a string
+	Time complexity: goes backwards to generate the string.  Max of O(N) or O(M).
+	Space complexity: max of O(M) or O(N) to hold a string
 	"""
 	def get_alignments_banded(self, string1, string2, k, ret_index=None):
 		i = len(string1)
@@ -225,6 +231,9 @@ class GeneSequencing:
 		# should never reach this
 		return new1, new2
 
+	"""
+	This is O(1) time and space since it is just 3 comparisons and 3 lookups
+	"""
 	def get_unbanded_costs(self, i, j):
 		top = float("inf")
 		diag = float("inf")
@@ -242,6 +251,9 @@ class GeneSequencing:
 
 		return top, left, diag, new_option_flag, 0
 
+	"""
+	This is O(1) time and space since it is just 3 comparisons and 3 lookups
+	"""
 	def get_banded_costs(self, i, j, k, shift_threshold):
 		top = float("inf")
 		diag = float("inf")
