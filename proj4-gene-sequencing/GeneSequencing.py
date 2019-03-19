@@ -200,7 +200,7 @@ class GeneSequencing:
 		new2 = ""
 		while True:
 			if i <= (k // 2):
-				rest_of_align1, rest_of_align2 =  self.get_alignments(string1[:i], string2[:i])
+				rest_of_align1, rest_of_align2 =  self.get_alignments(string1[:len_i], string2[:len_j])
 				return rest_of_align1 + new1, rest_of_align2 + new2
 			prev = self.prev_matrix[i][j]
 			if prev == "":
