@@ -50,6 +50,8 @@ class GeneSequencing:
 						# to debug
 						print(e)
 						quit(1)
+					if i == 2 and j == 9:
+						print(alignment1[:100], alignment2[:100])
 					s = {'align_cost':score, 'seqi_first100':alignment1[:100], 'seqj_first100':alignment2[:100]}
 					table.item(i,j).setText('{}'.format(int(score) if score != math.inf else score))
 					table.repaint()	
@@ -117,7 +119,7 @@ class GeneSequencing:
 					else:
 						diag_value = SUB if string1[i - 1] != string2[j - 1] else MATCH
 					# Since this compares three values to get min it is O(1) for this and other operations
-					choices = {top + INDEL: "top", left + INDEL: "left", diag + diag_value: "diag"}
+					choices = {diag + diag_value: "diag", top + INDEL: "top", left + INDEL: "left", }
 					min_score = min(list(choices.keys()))
 					if not banded:
 						self.matrix[i][j] = min_score
@@ -142,12 +144,13 @@ class GeneSequencing:
 			for index, value in enumerate(reversed(optimal_row)):
 				if value != float("inf"):
 					optimal_value = value
-					ret_index = index
+					ret_index = len(optimal_row) - index - 1
 					break
 			# this function is the max of O(N) and O(M) time and space to hold and find the string
 			alignment1, alignment2 = self.get_alignments_banded(string1, string2, k, ret_index)
 
 		# This step is the max of O(M) and O(N)
+		# print(alignment1, alignment2)
 		return optimal_value, alignment1, alignment2
 
 	"""
