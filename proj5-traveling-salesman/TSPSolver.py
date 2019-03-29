@@ -16,8 +16,24 @@ import numpy as np
 from TSPClasses import *
 import heapq
 import itertools
+import traceback
 
+class Stack(object):
 
+   def __init__(self):
+      self.items = []
+
+   def push(self, item):
+      self.items.append(item)
+
+   def pop(self):
+       return self.items.pop()
+
+   def peek(self):
+       return self.items[-1]
+
+   def isEmpty(self):
+       return len(self.items) == 0
 
 class TSPSolver:
 	def __init__( self, gui_view ):
@@ -83,10 +99,85 @@ class TSPSolver:
 	'''
 
 	def greedy( self,time_allowance=60.0 ):
-		pass
-	
-	
-	
+		try:
+			# initialization is O(n) space to hold all the cities and O(1) time
+			bssf = None
+			cities = self._scenario.getCities()
+			self.cities = cities
+			self.lowest_ave_cost = float("inf")
+			self.num_cities = len(cities)
+			start_node = cities[0]
+			self.lowest_cost = float("inf")
+			stack = Stack()
+			for city in self.cities:
+				stack.push(city)
+
+			start_time = time.time()
+			# stay under the time limit
+			while time.time() - start_time < time_allowance and not stack.isEmpty():
+				for index, city in enumerate(cities):
+					city_path = []
+					city_path.append(city)
+					to_visit = deepcopy(cities)
+					current_city = city
+					del to_visit[index]
+					while len(to_visit):
+						closest_city_index = to_visit.index(self.get_closest_cities(current_city, to_visit)[0][0])
+						closest_city = to_visit[closest_city_index]
+						if not self._scenario._edge_exists[current_city._index][closest_city._index]:
+							break
+						del to_visit[closest_city_index]
+						city_path.append(closest_city)
+						current_city = closest_city
+					if len(to_visit):
+						continue
+					else:
+						if not self._scenario._edge_exists[city_path[-1]._index][city_path[0]._index]:
+							continue
+						# is a solution
+						print("There is a solution ############")
+						bssf = TSPSolution(city_path)
+						end_time = time.time()
+						results = {}
+						results['cost'] = bssf.cost
+						results['time'] = end_time - start_time
+						results['count'] = None
+						results['soln'] = bssf
+						results['max'] = None
+						results['total'] = None
+						results['pruned'] = None
+						return results
+				else:
+					print("No solutions")
+					results = {}
+					results['cost'] = np.inf
+					results['time'] = time.time() - start_time
+					results['count'] = None
+					results['soln'] = None
+					results['max'] = None
+					results['total'] = None
+					results['pruned'] = None
+					return results
+
+		except Exception as e:
+			print(e)
+			traceback.print_exc()
+			raise(e)
+
+	def get_distance_matrix(self, city_list):
+		### create and initialize the matrix ###
+		matrix = np.full((len(city_list), len(city_list)), fill_value=np.inf)
+		for from_index, city in enumerate(city_list):
+			for dest_index, dest_city in enumerate(city_list):
+				if from_index == dest_index:
+					# already init to inf
+					continue
+				dist = city.costTo(dest_city)
+				matrix[from_index][dest_index] = dist
+
+		return matrix
+
+
 	''' <summary>
 		This is the entry point for the branch-and-bound algorithm that you will implement
 		</summary>
@@ -115,7 +206,11 @@ class TSPSolver:
 	def branchAndBound( self, time_allowance=60.0):
 		try:
 			# initialization is O(n) space to hold all the cities and O(1) time
-			bssf = None
+			bssf = self.greedy(time_allowance=time_allowance)
+			bssf2 = self.defaultRandomTour(time_allowance=time_allowance)
+			print("BSSF1 {} and BSSF2 {}".format(bssf["cost"], bssf2["cost"]))
+			bssf = min(bssf["cost"], bssf2["cost"])
+			print("Greedy and Random Algorithms found a BSSF of {}".format(bssf))
 			cities = self._scenario.getCities()
 			self.cities = cities
 			self.lowest_ave_cost = float("inf")
@@ -127,7 +222,7 @@ class TSPSolver:
 			total_states_created = 1
 			pruned_subproblems = 0
 			num_solutions = 0
-			self.lowest_cost = float("inf")
+			self.lowest_cost = bssf
 
 			# getting a recuced matrix is O(n^2) time and space
 			initial_reduced_matrix, lower_bound = self.get_init_reduced_matrix(cities)
@@ -354,6 +449,14 @@ class TSPSolver:
 	def fancy( self,time_allowance=60.0 ):
 		pass
 
+	def get_closest_cities(self, city, city_list):
+		cost = {}
+		for city_to_visit in city_list:
+			cost[city_to_visit] = city_to_visit.costTo(city)
+
+		sorted_x = sorted(cost.items(), key=lambda kv: kv[1])
+		# print("Closest length is {}".format(sorted_x[0][1]))
+		return sorted_x
 
 
 

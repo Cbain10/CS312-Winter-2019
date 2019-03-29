@@ -5,7 +5,7 @@ import random
 import signal
 import sys
 import time
-
+import traceback
 
 from which_pyqt import PYQT_VER
 if PYQT_VER == 'PYQT5':
@@ -303,23 +303,28 @@ class Proj5GUI( QMainWindow ):
 		#app.processEvents()
 		solve_func = 'self.solver.'+self.ALGORITHMS[self.algDropDown.currentIndex()][1]
 		results = eval(solve_func)(time_allowance=max_time )
-		if results:
-			self.statusBar.showMessage('')
-			self.numSolutions.setText( '{}'.format(results['count']) )
-			self.tourCost.setText( '{}'.format(results['cost']) )
-			self.solvedIn.setText( '{:6.6f} seconds'.format(results['time']) )
-			self._solution = results['soln']
-			if 'max' in results.keys():
-				self.maxQSize.setText( '{}'.format(results['max']))
-			if 'total' in results.keys():
-				self.totalStates.setText( '{}'.format(results['total']))
-			if 'pruned' in results.keys():
-				self.prunedStates.setText( '{}'.format(results['pruned']))
-			#if self._solution:
-			self.displaySolution()
-		else:
-			print( 'GOT NULL SOLUTION BACK!!' )		#probably shouldn't ever use this...
-		self.view.repaint()
+		try:
+			if results:
+				self.statusBar.showMessage('')
+				self.numSolutions.setText( '{}'.format(results['count']) )
+				self.tourCost.setText( '{}'.format(results['cost']) )
+				self.solvedIn.setText( '{:6.6f} seconds'.format(results['time']) )
+				self._solution = results['soln']
+				if 'max' in results.keys():
+					self.maxQSize.setText( '{}'.format(results['max']))
+				if 'total' in results.keys():
+					self.totalStates.setText( '{}'.format(results['total']))
+				if 'pruned' in results.keys():
+					self.prunedStates.setText( '{}'.format(results['pruned']))
+				#if self._solution:
+				self.displaySolution()
+			else:
+				print( 'GOT NULL SOLUTION BACK!!' )		#probably shouldn't ever use this...
+			self.view.repaint()
+		except Exception as e:
+			print(e)
+			traceback.print_exc()
+			raise(e)
 #		app.processEvents()
 
 	def checkGenInputs(self):
