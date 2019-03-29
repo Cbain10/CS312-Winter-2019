@@ -122,9 +122,12 @@ class TSPSolver:
 					current_city = city
 					del to_visit[index]
 					while len(to_visit):
-						closest_city_index = to_visit.index(self.get_closest_cities(current_city, to_visit)[0][0])
+						city_costs = self.get_closest_cities(current_city, to_visit)
+						closest_city_tuple = city_costs[0]
+						closest_city_index = to_visit.index(closest_city_tuple[0])
 						closest_city = to_visit[closest_city_index]
 						if not self._scenario._edge_exists[current_city._index][closest_city._index]:
+							# should only happen if all costs to remaining cities are inf
 							break
 						del to_visit[closest_city_index]
 						city_path.append(closest_city)
@@ -132,8 +135,8 @@ class TSPSolver:
 					if len(to_visit):
 						continue
 					else:
-						if not self._scenario._edge_exists[city_path[-1]._index][city_path[0]._index]:
-							continue
+						# if not self._scenario._edge_exists[city_path[-1]._index][city_path[0]._index]:
+						# 	continue
 						# is a solution
 						print("There is a solution ############")
 						bssf = TSPSolution(city_path)
@@ -209,8 +212,8 @@ class TSPSolver:
 			bssf = self.greedy(time_allowance=time_allowance)
 			bssf2 = self.defaultRandomTour(time_allowance=time_allowance)
 			print("BSSF1 {} and BSSF2 {}".format(bssf["cost"], bssf2["cost"]))
-			bssf = min(bssf["cost"], bssf2["cost"])
-			print("Greedy and Random Algorithms found a BSSF of {}".format(bssf))
+			bssf = bssf if min(bssf["cost"], bssf2["cost"]) == bssf["cost"] else bssf2
+			print("Greedy and Random Algorithms found a BSSF of {}".format(bssf["cost"]))
 			cities = self._scenario.getCities()
 			self.cities = cities
 			self.lowest_ave_cost = float("inf")
@@ -222,7 +225,7 @@ class TSPSolver:
 			total_states_created = 1
 			pruned_subproblems = 0
 			num_solutions = 0
-			self.lowest_cost = bssf
+			self.lowest_cost = bssf["cost"]
 
 			# getting a recuced matrix is O(n^2) time and space
 			initial_reduced_matrix, lower_bound = self.get_init_reduced_matrix(cities)
@@ -452,7 +455,7 @@ class TSPSolver:
 	def get_closest_cities(self, city, city_list):
 		cost = {}
 		for city_to_visit in city_list:
-			cost[city_to_visit] = city_to_visit.costTo(city)
+			cost[city_to_visit] = city.costTo(city_to_visit)
 
 		sorted_x = sorted(cost.items(), key=lambda kv: kv[1])
 		# print("Closest length is {}".format(sorted_x[0][1]))
