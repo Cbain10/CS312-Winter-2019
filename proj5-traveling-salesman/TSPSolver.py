@@ -219,16 +219,13 @@ class TSPSolver:
 			# getting a recuced matrix is O(n^2) time and space
 			initial_reduced_matrix, lower_bound = self.get_init_reduced_matrix(cities)
 			print("Initial lower bound is {}".format(lower_bound))
-			for index, city in enumerate(self.cities):
-				list_to_visit = deepcopy(self.cities)
-				del list_to_visit[index]
-				starting = tuple((lower_bound,
-								  city,
-								  list_to_visit,
-								  initial_reduced_matrix,
-								  [city._index],
-								  lower_bound))
-				heapq.heappush(heap, starting)
+			starting = tuple((lower_bound,
+							  cities[0],
+							  cities[1:],
+							  initial_reduced_matrix,
+							  [cities[0]._index],
+							  lower_bound))
+			heapq.heappush(heap, starting)
 			time_start = time.time()
 			# stay under the time limit
 			while time.time() - time_start < time_allowance and len(heap):
@@ -238,8 +235,8 @@ class TSPSolver:
 				# check is O(1) time and space
 				if next_to_try[5] < self.lowest_cost:
 					# for city in cities to visit still
-					print("Exanding subproblem with cost {} and {} more cities to visit".format(next_to_try[5],
-																								len(next_to_try[2])))
+					# print("Exanding subproblem with cost {} and {} more cities to visit".format(next_to_try[5],
+					# 																			len(next_to_try[2])))
 					for city in next_to_try[2]:
 						# MAKE SURE PATH EXISTS
 						if self._scenario._edge_exists[next_to_try[1]._index][city._index]:
@@ -304,7 +301,8 @@ class TSPSolver:
 	"""
 	def get_value(self, score, cities_visited):
 		if len(cities_visited):
-			return score * np.power(len(cities_visited), len(cities_visited) )
+			# note I tried a lot of these to get varying results
+			return score / len(cities_visited)
 		else:
 			# we will add this to bssf anyways
 			return 0
