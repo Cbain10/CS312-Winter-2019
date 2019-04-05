@@ -103,24 +103,20 @@ class TSPSolver:
 			# initialization is O(n) space to hold all the cities and O(1) time
 			bssf = None
 			cities = self._scenario.getCities()
-			self.cities = cities
-			self.lowest_ave_cost = float("inf")
 			self.num_cities = len(cities)
-			start_node = cities[0]
-			self.lowest_cost = float("inf")
-			stack = Stack()
-			for city in self.cities:
-				stack.push(city)
-
+			solution_dict = {}
 			start_time = time.time()
 			# stay under the time limit
-			while time.time() - start_time < time_allowance and not stack.isEmpty():
-				for index, city in enumerate(cities):
+			while time.time() - start_time < time_allowance:
+				# for each city as the starting node
+				for index_loop in range(len(cities)):
+					print("Starting with city {}".format(index_loop))
+					city = cities[index_loop]
 					city_path = []
 					city_path.append(city)
 					to_visit = deepcopy(cities)
 					current_city = city
-					del to_visit[index]
+					del to_visit[index_loop]
 					while len(to_visit):
 						city_costs = self.get_closest_cities(current_city, to_visit)
 						closest_city_tuple = city_costs[0]
@@ -135,10 +131,6 @@ class TSPSolver:
 					if len(to_visit):
 						continue
 					else:
-						# if not self._scenario._edge_exists[city_path[-1]._index][city_path[0]._index]:
-						# 	continue
-						# is a solution
-						print("There is a solution ############")
 						bssf = TSPSolution(city_path)
 						end_time = time.time()
 						results = {}
@@ -149,18 +141,16 @@ class TSPSolver:
 						results['max'] = None
 						results['total'] = None
 						results['pruned'] = None
-						return results
-				else:
-					print("No solutions")
-					results = {}
-					results['cost'] = np.inf
-					results['time'] = time.time() - start_time
-					results['count'] = None
-					results['soln'] = None
-					results['max'] = None
-					results['total'] = None
-					results['pruned'] = None
-					return results
+						solution_dict[index_loop] = results
+						continue
+
+				self.lowest_cost = float("inf")
+				for key, solution in solution_dict.items():
+					print(key, solution["cost"])
+					if solution["cost"] < self.lowest_cost:
+						self.lowest_cost = solution["cost"]
+						lowest = solution
+				return lowest
 
 		except Exception as e:
 			print(e)
@@ -209,33 +199,36 @@ class TSPSolver:
 	def branchAndBound( self, time_allowance=60.0):
 		try:
 			# initialization is O(n) space to hold all the cities and O(1) time
-			bssf = self.greedy(time_allowance=time_allowance)
-			bssf2 = self.defaultRandomTour(time_allowance=time_allowance)
-			print("BSSF1 {} and BSSF2 {}".format(bssf["cost"], bssf2["cost"]))
-			bssf = bssf if min(bssf["cost"], bssf2["cost"]) == bssf["cost"] else bssf2
-			print("Greedy and Random Algorithms found a BSSF of {}".format(bssf["cost"]))
+			bssf = self.greedy(time_allowance=time_allowance)['soln']
+			# Random too slow
+			# bssf2 = self.defaultRandomTour(time_allowance=time_allowance)['soln']
+			# print("BSSF1 {} and BSSF2 {}".format(bssf.cost, bssf2.cost))
+			# bssf = bssf if min(bssf.cost, bssf2.cost) == bssf.cost else bssf2
+			print("Greedy and Random Algorithms found a BSSF of {}".format(bssf.cost))
 			cities = self._scenario.getCities()
 			self.cities = cities
 			self.lowest_ave_cost = float("inf")
 			self.num_cities = len(cities)
-			start_node = cities[0]
 			heap = []
 			bssf_updates = 0
 			max_queue_len = 1
 			total_states_created = 1
 			pruned_subproblems = 0
 			num_solutions = 0
-			self.lowest_cost = bssf["cost"]
-
+			self.lowest_cost = bssf.cost
 			# getting a recuced matrix is O(n^2) time and space
 			initial_reduced_matrix, lower_bound = self.get_init_reduced_matrix(cities)
-			starting = tuple((9999999999999,
-							  start_node,
-							  cities[1:],
-							  initial_reduced_matrix,
-							  [start_node._index],
-							  lower_bound))
-			heapq.heappush(heap, starting)
+			print("Initial lower bound is {}".format(lower_bound))
+			for index, city in enumerate(self.cities):
+				list_to_visit = deepcopy(self.cities)
+				del list_to_visit[index]
+				starting = tuple((lower_bound,
+								  city,
+								  list_to_visit,
+								  initial_reduced_matrix,
+								  [city._index],
+								  lower_bound))
+				heapq.heappush(heap, starting)
 			time_start = time.time()
 			# stay under the time limit
 			while time.time() - time_start < time_allowance and len(heap):
@@ -245,6 +238,8 @@ class TSPSolver:
 				# check is O(1) time and space
 				if next_to_try[5] < self.lowest_cost:
 					# for city in cities to visit still
+					print("Exanding subproblem with cost {} and {} more cities to visit".format(next_to_try[5],
+																								len(next_to_try[2])))
 					for city in next_to_try[2]:
 						# MAKE SURE PATH EXISTS
 						if self._scenario._edge_exists[next_to_try[1]._index][city._index]:
@@ -302,6 +297,17 @@ class TSPSolver:
 			print(traceback.format_exc())
 			raise(e)
 
+
+	"""
+	This involves only a lookup and a divide so it is O(1) time and space to get
+	the length of the array and divide
+	"""
+	def get_value(self, score, cities_visited):
+		if len(cities_visited):
+			return score * np.power(len(cities_visited), len(cities_visited) )
+		else:
+			# we will add this to bssf anyways
+			return 0
 
 	"""
 	This function is O(n^2) time and space to visit and update every cell and return an array of 
@@ -396,20 +402,9 @@ class TSPSolver:
 	def get_cost_from_value(self, new_subproblem):
 		value = new_subproblem[0]
 		num_cities_left = len(new_subproblem[2])
-		return value * (self.num_cities - num_cities_left)
+		return value  ## / np.square(self.num_cities - num_cities_left)
 
-	"""
-	This involves only a lookup and a divide so it is O(1) time and space to get
-	the length of the array and divide
-	"""
-	def get_value(self, score, cities_to_visit):
-		if len(cities_to_visit):
-			return score / len(cities_to_visit)
-		else:
-			# we will add this to bssf anyways
-			return 0
-
-	"""
+	""""
 	This function turns all the indexes into their City class counterpart
 	It is O(n) time and space to iterate through and hold all the cities
 	"""
