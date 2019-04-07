@@ -446,18 +446,20 @@ class TSPSolver:
 	from collections import Counter
 	def fancy( self,time_allowance=60.0 ):
 		try:
+			start_node_num = 0
 			cost = {}
 			city_list = self._scenario.getCities()
-			start_city = city_list[0]
-			start = time.time()
+			start_city = city_list[start_node_num]
+			start_time = time.time()
 			for city_to_visit in city_list:
 				cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": start_city._index}
 				print("[{}, emptyset] cost = {}".format(city_to_visit._index,start_city.costTo(city_to_visit)))
 
-
-			while time.time() - start < time_allowance:
+			# potential TODO: edit this list to let us choose the start node
+			cities_without_start = list(range(1, len(city_list)))
+			while time.time() - start_time < time_allowance:
 				for subset_length in range(2, len(city_list)):
-					combinations_list = itertools.combinations(list(range(1, len(city_list))), subset_length)
+					combinations_list = itertools.combinations(cities_without_start, subset_length)
 					for combination in combinations_list:
 						min_value = float("inf")
 						min_prev = None
@@ -475,26 +477,61 @@ class TSPSolver:
 						print("{}: cost = {}".format(combination, min_value))
 
 				# do last iteration
-				# for
-				break
+				print("Getting final best cost!")
+				min_value = float("inf")
+				min_prev = None
+				# try to see distance to initial city from all other cities
+				for city_index, city_num in enumerate(cities_without_start):
+					subset = list(cities_without_start)
+					del subset[city_index]
+					print("Examining [{}, {{{}}}]".format(city_num, subset))
+					lookup = cost[frozenset(subset)]
+					# final cost is cost from city_num as 2nd to last coming from the rest of the subset
+					# and going to the zero-th node
+					value = lookup["cost"] + city_list[lookup["prev"]].costTo(city_list[city_num]) + \
+							city_list[city_num].costTo(city_list[0])
+					if value <= min_value:
+						min_value = value
+						min_prev = city_num
+				cost[frozenset(city_list)] = {"cost": min_value, "prev": min_prev}
+				print("The best cost for this TSP problem was {}".format(min_value))
+
+				# trace pointer back
+				print("Getting path for best cost!")
+				route = []
+				# this is the last node
+				current_prev_pointer = cost[frozenset(city_list)]["prev"]
+				current_cities_set = set(cities_without_start)
+				# go until 2nd to last node (otherwise this method doesn't work)
+				while len(current_cities_set) > 1:
+					# insert node into route list
+					route.insert(0, city_list[current_prev_pointer])
+					# get set without that city
+					current_cities_set = current_cities_set - set([current_prev_pointer])
+					current_prev_pointer = cost[frozenset(current_cities_set)]["prev"]
+
+				# add last element of set - 2nd to beginning node
+				route.insert(0, city_list[current_cities_set.pop()])
+				# add start city
+				route.insert(0, city_list[start_node_num])
+				# return solution
+				bssf = TSPSolution(route)
+				end_time = time.time()
+				results = {}
+				results['cost'] = bssf.cost
+				results['time'] = end_time - start_time
+				results['count'] = None
+				results['soln'] = bssf
+				results['max'] = None
+				results['total'] = None
+				results['pruned'] = None
+				return results
 
 		except Exception as e:
 			# error catching so I can see errors
 			print(e)
 			print(traceback.format_exc())
 			raise(e)
-
-
-
-
-		# trace pointer back
-
-
-		# return solution
-
-
-
-
 
 	def get_closest_cities(self, city, city_list):
 		cost = {}
