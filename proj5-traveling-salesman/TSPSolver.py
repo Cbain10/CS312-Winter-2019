@@ -150,6 +150,8 @@ class TSPSolver:
 					if solution["cost"] < self.lowest_cost:
 						self.lowest_cost = solution["cost"]
 						lowest = solution
+
+				print("BSSF is {}".format(lowest["soln"].cost))
 				return lowest
 
 		except Exception as e:
@@ -441,9 +443,58 @@ class TSPSolver:
 		best solution found.  You may use the other three field however you like.
 		algorithm</returns> 
 	'''
-		
+	from collections import Counter
 	def fancy( self,time_allowance=60.0 ):
-		pass
+		try:
+			cost = {}
+			city_list = self._scenario.getCities()
+			start_city = city_list[0]
+			start = time.time()
+			for city_to_visit in city_list:
+				cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": start_city._index}
+				print("[{}, emptyset] cost = {}".format(city_to_visit._index,start_city.costTo(city_to_visit)))
+
+
+			while time.time() - start < time_allowance:
+				for subset_length in range(2, len(city_list)):
+					combinations_list = itertools.combinations(list(range(1, len(city_list))), subset_length)
+					for combination in combinations_list:
+						min_value = float("inf")
+						min_prev = None
+						for city_index, city_num in enumerate(combination):
+							subset = list(combination)
+							del subset[city_index]
+							print("Examining [{}, {{{}}}]".format(city_num, subset))
+							lookup = cost[frozenset(subset)]
+							value = lookup["cost"] + city_list[lookup["prev"]].costTo(city_list[city_num])
+							if value <= min_value:
+								min_value = value
+								min_prev = city_num
+						cost[frozenset(combination)] = {"cost": min_value, "prev": min_prev}
+						print("Entering in dict:")
+						print("{}: cost = {}".format(combination, min_value))
+
+				# do last iteration
+				# for
+				break
+
+		except Exception as e:
+			# error catching so I can see errors
+			print(e)
+			print(traceback.format_exc())
+			raise(e)
+
+
+
+
+		# trace pointer back
+
+
+		# return solution
+
+
+
+
 
 	def get_closest_cities(self, city, city_list):
 		cost = {}
