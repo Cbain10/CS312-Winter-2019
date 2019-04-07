@@ -470,8 +470,7 @@ class TSPSolver:
 				cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": start_city._index}
 				print("[{}, emptyset] cost = {}".format(city_to_visit._index,start_city.costTo(city_to_visit)))
 
-			# potential TODO: edit this list to let us choose the start node
-			cities_without_start = list(range(1, len(city_list)))
+			cities_without_start = [number for number in range(len(city_list)) if number != start_node_num]
 			while time.time() - start_time < time_allowance:
 				for subset_length in range(2, len(city_list)):
 					combinations_list = itertools.combinations(cities_without_start, subset_length)
