@@ -461,18 +461,24 @@ class TSPSolver:
 	from collections import Counter
 	def fancy( self,time_allowance=60.0 ):
 		try:
-			start_node_num = 0
-			cost = {}
+			bssf = None
 			city_list = self._scenario.getCities()
-			start_city = city_list[start_node_num]
 			start_time = time.time()
-			for city_to_visit in city_list:
-				cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": start_city._index}
-				print("[{}, emptyset] cost = {}".format(city_to_visit._index,start_city.costTo(city_to_visit)))
+			for start_node_num in range(len(city_list)):
+				cities_without_start = [number for number in range(len(city_list)) if number != start_node_num]
+				cost = {}
+				start_city = city_list[start_node_num]
+				if time.time() - start_time > time_allowance:
+					print("Time limit reached.  Quitting")
+					# check the time here because the while loop would never check
+					break
+				for city_to_visit_index in cities_without_start:
+					city_to_visit = city_list[city_to_visit_index]
+					cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": start_city._index}
+					print("[{}, emptyset] cost = {}".format(city_to_visit._index,start_city.costTo(city_to_visit)))
 
-			cities_without_start = [number for number in range(len(city_list)) if number != start_node_num]
-			while time.time() - start_time < time_allowance:
 				for subset_length in range(2, len(city_list)):
+					print("On subset length {} ########".format(subset_length))
 					combinations_list = itertools.combinations(cities_without_start, subset_length)
 					for combination in combinations_list:
 						min_value = float("inf")
@@ -529,17 +535,22 @@ class TSPSolver:
 				# add start city
 				route.insert(0, city_list[start_node_num])
 				# return solution
-				bssf = TSPSolution(route)
-				end_time = time.time()
-				results = {}
-				results['cost'] = bssf.cost
-				results['time'] = end_time - start_time
-				results['count'] = None
-				results['soln'] = bssf
-				results['max'] = None
-				results['total'] = None
-				results['pruned'] = None
-				return results
+				current_bssf = TSPSolution(route)
+				print("Start node {} has a solution! Cost = {}".format(start_node_num, current_bssf.cost))
+				if bssf is None or current_bssf.cost < bssf.cost:
+					print("Current cost is better. Switching")
+					bssf = current_bssf
+
+			end_time = time.time()
+			results = {}
+			results['cost'] = bssf.cost
+			results['time'] = end_time - start_time
+			results['count'] = None
+			results['soln'] = bssf
+			results['max'] = None
+			results['total'] = None
+			results['pruned'] = None
+			return results
 
 		except Exception as e:
 			# error catching so I can see errors
