@@ -434,6 +434,21 @@ class TSPSolver:
 		del cities_to_still_visit[delete_index]
 		return cities_to_still_visit
 
+	"""
+	Used for greedy algorithm
+	This is O(n) time and space to find the closest city and to store the list and find the min
+	"""
+	def get_closest_cities(self, city, city_list):
+		cost = {}
+		for city_to_visit in city_list:
+			cost[city_to_visit] = city.costTo(city_to_visit)
+
+		sorted_x = sorted(cost.items(), key=lambda kv: kv[1])
+		# print("Closest length is {}".format(sorted_x[0][1]))
+		return sorted_x
+
+
+
 
 	''' <summary>
 		This is the entry point for the algorithm you'll write for your group project.
@@ -532,16 +547,6 @@ class TSPSolver:
 			print(e)
 			print(traceback.format_exc())
 			raise(e)
-
-	def get_closest_cities(self, city, city_list):
-		cost = {}
-		for city_to_visit in city_list:
-			cost[city_to_visit] = city.costTo(city_to_visit)
-
-		sorted_x = sorted(cost.items(), key=lambda kv: kv[1])
-		# print("Closest length is {}".format(sorted_x[0][1]))
-		return sorted_x
-
 
 
 		
