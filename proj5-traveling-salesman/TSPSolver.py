@@ -467,13 +467,13 @@ class TSPSolver:
 			start_city = city_list[start_node_num]
 			start_time = time.time()
 			for city_to_visit in city_list:
-				cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": start_city._index}
+				cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit), "prev": city_to_visit._index}
 				print("[{}, emptyset] cost = {}".format(city_to_visit._index,start_city.costTo(city_to_visit)))
 
 			cities_without_start = [number for number in range(len(city_list)) if number != start_node_num]
 			while time.time() - start_time < time_allowance:
 				for subset_length in range(2, len(city_list)):
-					combinations_list = itertools.combinations(cities_without_start, subset_length)
+					combinations_list = list(itertools.combinations(cities_without_start, subset_length))
 					for combination in combinations_list:
 						min_value = float("inf")
 						min_prev = None
