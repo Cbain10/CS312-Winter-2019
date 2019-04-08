@@ -461,7 +461,6 @@ class TSPSolver:
 		best solution found.  You may use the other three field however you like.
 		algorithm</returns> 
 	'''
-    from collections import Counter
     def fancy(self, time_allowance=60.0):
         try:
             start_node_num = 0
@@ -472,7 +471,6 @@ class TSPSolver:
             for city_to_visit in city_list:
                 cost[frozenset([city_to_visit._index])] = {"cost": start_city.costTo(city_to_visit),
                                                            "prev": city_to_visit._index}
-                print("[{}, emptyset] cost = {}".format(city_to_visit._index, start_city.costTo(city_to_visit)))
 
             cities_without_start = [number for number in range(len(city_list)) if number != start_node_num]
             while time.time() - start_time < time_allowance:
@@ -484,25 +482,20 @@ class TSPSolver:
                         for city_index, city_num in enumerate(combination):
                             subset = list(combination)
                             del subset[city_index]
-                            print("Examining [{}, {{{}}}]".format(city_num, subset))
                             lookup = cost[frozenset(subset)]
                             value = lookup["cost"] + city_list[lookup["prev"]].costTo(city_list[city_num])
                             if value <= min_value:
                                 min_value = value
                                 min_prev = city_num
                         cost[frozenset(combination)] = {"cost": min_value, "prev": min_prev}
-                        print("Entering in dict:")
-                        print("{}: cost = {}".format(combination, min_value))
 
                 # do last iteration
-                print("Getting final best cost!")
                 min_value = float("inf")
                 min_prev = None
                 # try to see distance to initial city from all other cities
                 for city_index, city_num in enumerate(cities_without_start):
                     subset = list(cities_without_start)
                     del subset[city_index]
-                    print("Examining [{}, {{{}}}]".format(city_num, subset))
                     lookup = cost[frozenset(subset)]
                     # final cost is cost from city_num as 2nd to last coming from the rest of the subset
                     # and going to the zero-th node
@@ -512,10 +505,8 @@ class TSPSolver:
                         min_value = value
                         min_prev = city_num
                 cost[frozenset(city_list)] = {"cost": min_value, "prev": min_prev}
-                print("The best cost for this TSP problem was {}".format(min_value))
 
                 # trace pointer back
-                print("Getting path for best cost!")
                 route = []
                 # this is the last node
                 current_prev_pointer = cost[frozenset(city_list)]["prev"]
