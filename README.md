@@ -1,4 +1,4 @@
-# CS312-Winter-2019
+# BYU CS312 Algorithm Analysis
 Python Algorithm Class Projects
 
 * Lab 1 - Primality Test: I implemented the prime number test based on Fermat's little theorem.
