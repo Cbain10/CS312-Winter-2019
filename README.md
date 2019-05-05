@@ -8,3 +8,5 @@ Python Algorithm Class Projects
 * Labs 5 and 6 - Traveling Salesperson: In this project, I implemented a branch and bound algorithm to find solutions to the traveling salesperson problem (TSP) and worked in a small group to compare accuracy and the theoretical and empirical complexity of different algorithmic "solutions" to the traveling salesmen problem (TSP), including greedy, branch and bound, and the Held-Karp algorithm.
 
 For more information on the class see https://faculty.cs.byu.edu/~farrell/courses/CS312/index.php
+
+Note: all programs are run through the GUI file.  For example run `python3 Proj1GUI.py` to run the primality testing lab.
